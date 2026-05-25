@@ -3,11 +3,12 @@ import sys
 import threading
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 sys.path.insert(0, str(Path(__file__).parent))
 from ia_processor import extrair_dados
 from excel_manager import adicionar_linha, garantir_excel, contar_registros_hoje
+from importador import importar_planilha
 import config
 
 ROOT       = Path(__file__).parent.parent
@@ -42,7 +43,7 @@ class AnhangaRadar(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Anhangá Radar")
-        self.geometry("720x800")
+        self.geometry("720x900")
         self.resizable(False, False)
         self.configure(bg=BG)
         self._setup_style()
@@ -155,6 +156,17 @@ class AnhangaRadar(tk.Tk):
                   padx=16, pady=8).pack(side="left")
         self._btn(acao, "Salvar na planilha", self._salvar,
                   accent=True, padx=20, pady=8).pack(side="right")
+
+        # Importar planilha antiga
+        self._sep(body)
+        self._titulo(body, "Importar dados de planilha antiga")
+        tk.Label(body,
+                 text="Selecione um .xlsx com contatos anteriores — a IA mapeia as colunas automaticamente.",
+                 bg=BG, fg=TEXT2, font=("Segoe UI", 8),
+                 wraplength=640, justify="left").pack(anchor="w", pady=(2, 8))
+        self.btn_importar = self._btn(body, "Selecionar arquivo .xlsx e importar",
+                                      self._importar_planilha, padx=16, pady=8)
+        self.btn_importar.pack(anchor="w")
 
         # Rodapé fixo — duas linhas
         rodape = tk.Frame(self, bg=CARD)
@@ -319,6 +331,50 @@ class AnhangaRadar(tk.Tk):
             os.startfile(str(EXCEL_PATH))
         except Exception as exc:
             messagebox.showerror("Erro", str(exc))
+
+    def _importar_planilha(self):
+        api_key = self.var_apikey.get().strip()
+        if not api_key:
+            messagebox.showwarning("API Key", "Informe a chave da API antes de importar.")
+            return
+
+        path = filedialog.askopenfilename(
+            title="Selecionar planilha antiga",
+            filetypes=[("Excel", "*.xlsx"), ("Todos os arquivos", "*.*")],
+        )
+        if not path:
+            return
+
+        self.btn_importar.config(state="disabled", text="Importando…")
+        self.var_barra.set("⏳  Lendo planilha — aguarde...")
+
+        def _worker():
+            try:
+                def progresso(msg):
+                    self.after(0, self.var_barra.set, f"⏳  {msg}")
+
+                importados, erros = importar_planilha(
+                    path, str(EXCEL_PATH), api_key, progresso
+                )
+
+                msg = f"✓  {importados} registro(s) importado(s) com sucesso."
+                if erros:
+                    msg += f"  ({len(erros)} linha(s) ignorada(s))"
+                self.after(0, self.var_barra.set, msg)
+                self.after(0, self._atualizar_contador)
+
+                if erros:
+                    self.after(0, messagebox.showwarning,
+                               "Importação concluída com avisos",
+                               "\n".join(erros[:10]))
+            except Exception as exc:
+                self.after(0, messagebox.showerror, "Erro na importação", str(exc))
+                self.after(0, self.var_barra.set, "✗  Erro ao importar planilha.")
+            finally:
+                self.after(0, lambda: self.btn_importar.config(
+                    state="normal", text="Selecionar arquivo .xlsx e importar"))
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _limpar(self):
         self.txt_desc.delete("1.0", "end")
