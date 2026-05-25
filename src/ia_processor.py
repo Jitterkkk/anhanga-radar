@@ -1,8 +1,9 @@
 import json
 import re
-import anthropic
+import google.generativeai as genai
+from google.api_core.exceptions import PermissionDenied, Unauthenticated
 
-MODELO = "claude-sonnet-4-20250514"
+MODELO = "gemini-1.5-flash"
 
 CAMPOS = ["nome", "sobrenome", "cidade", "telefone", "fonte", "status", "observacoes"]
 
@@ -31,22 +32,21 @@ Regras:
 
 
 def extrair_dados(texto: str, api_key: str) -> dict:
-    """Chama a API da Anthropic e retorna dicionário com os campos extraídos."""
-    cliente = anthropic.Anthropic(api_key=api_key)
+    """Chama a API do Google Gemini e retorna dicionário com os campos extraídos."""
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        model_name=MODELO,
+        system_instruction=SYSTEM_PROMPT,
+    )
 
     try:
-        resposta = cliente.messages.create(
-            model=MODELO,
-            max_tokens=512,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": texto}],
-        )
-    except anthropic.AuthenticationError:
+        resposta = model.generate_content(texto)
+    except (PermissionDenied, Unauthenticated):
         raise ValueError(
-            "API Key inválida. Verifique em console.anthropic.com"
+            "API Key inválida. Verifique em aistudio.google.com"
         )
 
-    raw = resposta.content[0].text.strip()
+    raw = resposta.text.strip()
     dados = _parsear_json(raw)
     return _normalizar(dados)
 

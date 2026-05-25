@@ -84,7 +84,7 @@ class AnhangaRadar(tk.Tk):
         body.pack(fill="both", expand=True, padx=24, pady=14)
 
         # API Key
-        self._titulo(body, "Chave da API Anthropic")
+        self._titulo(body, "Chave da API  —  aistudio.google.com")
         api_row = tk.Frame(body, bg=BG)
         api_row.pack(fill="x", pady=(4, 0))
         self.var_apikey = tk.StringVar()
@@ -257,7 +257,7 @@ class AnhangaRadar(tk.Tk):
         texto   = self.txt_desc.get("1.0", "end").strip()
 
         if not api_key:
-            messagebox.showwarning("API Key", "Informe a chave da API Anthropic.")
+            messagebox.showwarning("API Key", "Informe a chave do Google AI Studio.\nObtanha em: aistudio.google.com")
             return
         if not texto:
             messagebox.showwarning("Descrição", "Descreva o contato antes de processar.")
