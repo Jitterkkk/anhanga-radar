@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 sys.path.insert(0, str(Path(__file__).parent))
-from ia_processor import extrair_dados
+from ia_processor import extrair_dados, extrair_multiplos
 from excel_manager import adicionar_linha, garantir_excel, contar_registros_hoje
 from importador import importar_planilha
 import config
@@ -28,6 +28,188 @@ BORDER  = "#3d3d5c"
 FONTES   = ["Ligação", "WhatsApp", "E-mail", "Visita", "Outro"]
 STATUSES = ["Sem resposta", "Não atendida", "Número inexistente",
             "Falha no contato", "Sem interesse", "Contato realizado", "Agendado"]
+
+
+class JanelaBatch(tk.Toplevel):
+    def __init__(self, parent, api_key, excel_path, cb_contador):
+        super().__init__(parent)
+        self.title("Processamento em Lote")
+        self.geometry("720x660")
+        self.resizable(False, False)
+        self.configure(bg=BG)
+        self._api_key    = api_key
+        self._excel_path = excel_path
+        self._cb_contador = cb_contador
+        self._contatos   = []
+        self._build()
+        self.grab_set()
+
+    def _build(self):
+        hdr = tk.Frame(self, bg=CARD, height=54)
+        hdr.pack(fill="x")
+        hdr.pack_propagate(False)
+        tk.Label(hdr, text="PROCESSAMENTO EM LOTE", bg=CARD, fg=TEXT,
+                 font=("Segoe UI", 14, "bold")).pack(side="left", padx=20, pady=14)
+
+        body = tk.Frame(self, bg=BG)
+        body.pack(fill="both", expand=True, padx=24, pady=14)
+
+        tk.Label(body,
+                 text="Descreva múltiplos contatos — separe cada um por uma linha em branco:",
+                 bg=BG, fg=TEXT, font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        tk.Label(body,
+                 text='Ex:  "Liguei pro João Silva de Campinas, não atendeu"'
+                      '\n      (linha em branco)\n'
+                      '      "Maria Souza, SP, WhatsApp, sem interesse, (11) 99999-0000"',
+                 bg=BG, fg=TEXT2, font=("Segoe UI", 8),
+                 justify="left").pack(anchor="w", pady=(2, 8))
+
+        self.txt = tk.Text(
+            body, height=10, bg=INPUT, fg=TEXT, insertbackground=TEXT,
+            font=("Segoe UI", 10), bd=0, relief="flat", wrap="word",
+            padx=10, pady=8,
+            highlightthickness=1, highlightbackground=BORDER, highlightcolor=ACCENT,
+        )
+        self.txt.pack(fill="x")
+
+        btn_row = tk.Frame(body, bg=BG)
+        btn_row.pack(fill="x", pady=(8, 0))
+        self.btn_proc = self._btn(btn_row, "Processar com IA",
+                                  self._processar, accent=True, padx=20, pady=9)
+        self.btn_proc.pack(side="right")
+
+        tk.Frame(body, bg=BORDER, height=1).pack(fill="x", pady=12)
+
+        self.lbl_resultado = tk.Label(
+            body, text="Nenhum dado processado ainda.",
+            bg=BG, fg=TEXT2, font=("Segoe UI", 9, "italic"))
+        self.lbl_resultado.pack(anchor="w", pady=(0, 6))
+
+        frame_list = tk.Frame(body, bg=INPUT, highlightthickness=1,
+                              highlightbackground=BORDER)
+        frame_list.pack(fill="both", expand=True)
+
+        sb = tk.Scrollbar(frame_list, bg=SURFACE, troughcolor=BG)
+        sb.pack(side="right", fill="y")
+
+        self.listbox = tk.Listbox(
+            frame_list, bg=INPUT, fg=TEXT, font=("Segoe UI", 9),
+            selectbackground=ACCENT, selectforeground=TEXT,
+            bd=0, relief="flat", activestyle="none",
+            yscrollcommand=sb.set,
+        )
+        self.listbox.pack(fill="both", expand=True, padx=8, pady=6)
+        sb.config(command=self.listbox.yview)
+
+        acao = tk.Frame(body, bg=BG)
+        acao.pack(fill="x", pady=(10, 0))
+
+        self.var_barra = tk.StringVar(value="")
+        tk.Label(acao, textvariable=self.var_barra, bg=BG, fg=TEXT2,
+                 font=("Segoe UI", 8)).pack(side="left")
+
+        self.btn_salvar = self._btn(acao, "Salvar todos na planilha",
+                                    self._salvar_todos, accent=True, padx=20, pady=8)
+        self.btn_salvar.config(state="disabled")
+        self.btn_salvar.pack(side="right")
+
+    def _btn(self, parent, texto, cmd, accent=False, padx=14, pady=7):
+        bg_n = ACCENT  if accent else SURFACE
+        bg_h = ACCENT2 if accent else BORDER
+        bold = "bold"  if accent else "normal"
+        b = tk.Button(parent, text=texto, command=cmd,
+                      bg=bg_n, fg=TEXT, activebackground=bg_h,
+                      activeforeground=TEXT, font=("Segoe UI", 10, bold),
+                      bd=0, relief="flat", cursor="hand2",
+                      padx=padx, pady=pady)
+        b.bind("<Enter>", lambda _e: b.config(bg=bg_h))
+        b.bind("<Leave>", lambda _e: b.config(bg=bg_n))
+        return b
+
+    def _processar(self):
+        texto = self.txt.get("1.0", "end").strip()
+        if not texto:
+            messagebox.showwarning("Texto vazio", "Descreva os contatos antes de processar.",
+                                   parent=self)
+            return
+
+        self.btn_proc.config(state="disabled", text="Processando…")
+        self.btn_salvar.config(state="disabled")
+        self.lbl_resultado.config(text="⏳  Chamando a IA — aguarde...")
+        self.listbox.delete(0, "end")
+        self._contatos = []
+
+        def _worker():
+            try:
+                contatos = extrair_multiplos(texto, self._api_key)
+                self._contatos = contatos
+                self.after(0, self._mostrar_resultados, contatos)
+            except Exception as exc:
+                self.after(0, messagebox.showerror, "Erro na IA", str(exc))
+                self.after(0, self.lbl_resultado.config,
+                           {"text": "✗  Erro ao processar."})
+            finally:
+                self.after(0, lambda: self.btn_proc.config(
+                    state="normal", text="Processar com IA"))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _mostrar_resultados(self, contatos):
+        n = len(contatos)
+        self.lbl_resultado.config(
+            text=f"✓  {n} contato(s) extraído(s) — revise a lista e salve:",
+            fg=TEXT)
+        self.listbox.delete(0, "end")
+
+        for i, c in enumerate(contatos, 1):
+            nome     = f'{c.get("nome", "")} {c.get("sobrenome", "")}'.strip()
+            cidade   = c.get("cidade", "") or "—"
+            status   = c.get("status", "") or "—"
+            telefone = c.get("telefone", "")
+            tel_str  = f"  {telefone}" if telefone else ""
+            self.listbox.insert("end", f"  {i}.  {nome} — {cidade}{tel_str} — {status}")
+
+        if contatos:
+            self.btn_salvar.config(state="normal")
+
+    def _salvar_todos(self):
+        if not self._contatos:
+            return
+
+        self.btn_salvar.config(state="disabled", text="Salvando…")
+        salvos = 0
+        erros  = []
+
+        for i, c in enumerate(self._contatos, 1):
+            try:
+                dados = {
+                    "nome":        c.get("nome", "").strip(),
+                    "sobrenome":   c.get("sobrenome", "").strip(),
+                    "cidade":      c.get("cidade", "").strip(),
+                    "telefone":    c.get("telefone", "").strip(),
+                    "fonte":       c.get("fonte", "").strip(),
+                    "status":      c.get("status", "").strip(),
+                    "observacoes": c.get("observacoes", "").strip(),
+                }
+                dados["aba"] = _aba_para_status(dados["status"])
+                adicionar_linha(self._excel_path, dados)
+                salvos += 1
+                self.var_barra.set(f"Salvando {i}/{len(self._contatos)}…")
+                self.update_idletasks()
+            except Exception as exc:
+                erros.append(f"Contato {i}: {exc}")
+
+        self.var_barra.set(f"✓  {salvos} registro(s) salvo(s).")
+        self._cb_contador()
+        self.btn_salvar.config(state="normal", text="Salvar todos na planilha")
+        self._contatos = []
+
+        if erros:
+            messagebox.showwarning("Concluído com erros",
+                                   "\n".join(erros[:10]), parent=self)
+        else:
+            messagebox.showinfo("Sucesso",
+                                f"{salvos} contato(s) salvos na planilha!", parent=self)
 
 
 def _aba_para_status(status: str) -> str:
@@ -154,6 +336,8 @@ class AnhangaRadar(tk.Tk):
         acao.pack(fill="x", pady=(22, 0))
         self._btn(acao, "Abrir Excel", self._abrir_excel,
                   padx=16, pady=8).pack(side="left")
+        self._btn(acao, "Modo em Lote", self._abrir_batch,
+                  padx=16, pady=8).pack(side="left", padx=(10, 0))
         self._btn(acao, "Salvar na planilha", self._salvar,
                   accent=True, padx=20, pady=8).pack(side="right")
 
@@ -331,6 +515,14 @@ class AnhangaRadar(tk.Tk):
             os.startfile(str(EXCEL_PATH))
         except Exception as exc:
             messagebox.showerror("Erro", str(exc))
+
+    def _abrir_batch(self):
+        api_key = self.var_apikey.get().strip()
+        if not api_key:
+            messagebox.showwarning("API Key",
+                                   "Informe a chave da API antes de usar o Modo em Lote.")
+            return
+        JanelaBatch(self, api_key, str(EXCEL_PATH), self._atualizar_contador)
 
     def _importar_planilha(self):
         api_key = self.var_apikey.get().strip()
