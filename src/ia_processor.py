@@ -17,10 +17,20 @@ observacoes. Campos não mencionados retornam string vazia.
 
 Texto: {texto}"""
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt,
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+        )
+    except Exception as exc:
+        msg = str(exc)
+        if "RESOURCE_EXHAUSTED" in msg or "429" in msg:
+            raise ValueError(
+                "Cota da API esgotada. Aguarde alguns minutos e tente novamente.\n"
+                "Para mais detalhes: ai.google.dev/gemini-api/docs/rate-limits"
+            )
+        raise
+
     raw = response.text.strip().replace("```json", "").replace("```", "").strip()
     try:
         return json.loads(raw)
