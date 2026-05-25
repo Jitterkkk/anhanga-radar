@@ -52,10 +52,19 @@ def extrair_dados(texto: str, api_key: str) -> dict:
 
 def extrair_multiplos(texto: str, api_key: str) -> list:
     prompt = (
-        "Extraia TODOS os contatos com vereadores do texto abaixo.\n"
-        "Cada parágrafo ou bloco separado por linha em branco é um contato diferente.\n"
-        "Retorne SOMENTE um array JSON válido, sem markdown. Cada elemento deve ter:\n"
-        f"{_CAMPOS}\n\n"
+        "Você é um extrator de dados especializado em contatos com vereadores.\n"
+        "Analise o texto abaixo — mesmo que seja um parágrafo bagunçado — e identifique "
+        "TODOS os vereadores/pessoas mencionados, gerando um objeto JSON para cada um.\n\n"
+        "Regras importantes:\n"
+        "- Cada vereador mencionado vira um registro separado no array\n"
+        "- Informações compartilhadas (cidade, fonte, data) se aplicam a todos os mencionados\n"
+        "- Deduza o status pelo contexto: 'não atendeu' → Não atendida; "
+        "'recusou/sem interesse/não quer' → Sem interesse; "
+        "'desligou/caixa postal/número errado' → Falha no contato; "
+        "'atendeu e conversou/agendou' → Contato realizado; "
+        "sem informação → Sem resposta\n"
+        "- Retorne SOMENTE um array JSON válido, sem markdown, sem explicações\n\n"
+        f"Campos de cada objeto: {_CAMPOS}\n\n"
         f"Texto:\n{texto}"
     )
     raw = _chamar_groq(api_key, prompt)

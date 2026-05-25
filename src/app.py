@@ -55,14 +55,13 @@ class JanelaBatch(tk.Toplevel):
         body.pack(fill="both", expand=True, padx=24, pady=14)
 
         tk.Label(body,
-                 text="Descreva múltiplos contatos — separe cada um por uma linha em branco:",
+                 text="Descreva vários contatos de uma vez — a IA entende texto livre:",
                  bg=BG, fg=TEXT, font=("Segoe UI", 10, "bold")).pack(anchor="w")
         tk.Label(body,
-                 text='Ex:  "Liguei pro João Silva de Campinas, não atendeu"'
-                      '\n      (linha em branco)\n'
-                      '      "Maria Souza, SP, WhatsApp, sem interesse, (11) 99999-0000"',
+                 text='Ex: "Ligamos para os vereadores João Silva, Maria Souza e Carlos Pereira, '
+                      'todos de Salvador-BA. João não atendeu, Maria recusou e Carlos desligou."',
                  bg=BG, fg=TEXT2, font=("Segoe UI", 8),
-                 justify="left").pack(anchor="w", pady=(2, 8))
+                 wraplength=640, justify="left").pack(anchor="w", pady=(2, 8))
 
         self.txt = tk.Text(
             body, height=10, bg=INPUT, fg=TEXT, insertbackground=TEXT,
