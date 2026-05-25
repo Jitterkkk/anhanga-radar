@@ -25,8 +25,8 @@ INPUT   = "#2a2a3e"
 BORDER  = "#3d3d5c"
 
 FONTES   = ["Ligação", "WhatsApp", "E-mail", "Visita", "Outro"]
-STATUSES = ["Não atendeu", "Caixa postal", "Número errado",
-            "Sem interesse", "Recusou proposta", "Ocupado", "Outro"]
+STATUSES = ["Sem resposta", "Não atendida", "Número inexistente",
+            "Falha no contato", "Sem interesse", "Contato realizado", "Agendado"]
 
 
 def _aba_para_status(status: str) -> str:
@@ -257,13 +257,16 @@ class AnhangaRadar(tk.Tk):
         texto   = self.txt_desc.get("1.0", "end").strip()
 
         if not api_key:
-            messagebox.showwarning("API Key", "Informe a chave do Google AI Studio.\nObtanha em: aistudio.google.com")
+            messagebox.showwarning("API Key", "Informe a chave do Google AI Studio.\nObtenha em: aistudio.google.com")
             return
         if not texto:
             messagebox.showwarning("Descrição", "Descreva o contato antes de processar.")
             return
 
-        config.salvar_api_key(ROOT, api_key)
+        try:
+            config.salvar_api_key(ROOT, api_key)
+        except Exception:
+            pass  # falha ao persistir a chave não deve impedir o processamento
         self.btn_proc.config(state="disabled", text="Processando…")
         self.var_barra.set("⏳  Chamando a IA — aguarde...")
 

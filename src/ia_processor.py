@@ -22,4 +22,7 @@ Texto: {texto}"""
         contents=prompt,
     )
     raw = response.text.strip().replace("```json", "").replace("```", "").strip()
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        raise ValueError(f"A IA não retornou JSON válido. Resposta recebida:\n{raw[:300]}")
