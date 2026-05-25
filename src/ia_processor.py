@@ -1,13 +1,9 @@
 from google import genai
-from google.genai import types
 import json
 
 
 def extrair_dados(texto: str, api_key: str) -> dict:
-    client = genai.Client(
-        api_key=api_key,
-        http_options=types.HttpOptions(api_version="v1"),
-    )
+    client = genai.Client(api_key=api_key)
 
     prompt = f"""Extraia informações de contato com vereador e retorne SOMENTE JSON válido, sem markdown.
 
@@ -19,7 +15,7 @@ Texto: {texto}"""
 
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash-lite",
             contents=prompt,
         )
     except Exception as exc:
@@ -27,7 +23,11 @@ Texto: {texto}"""
         if "RESOURCE_EXHAUSTED" in msg or "429" in msg:
             raise ValueError(
                 "Cota da API esgotada. Aguarde alguns minutos e tente novamente.\n"
-                "Para mais detalhes: ai.google.dev/gemini-api/docs/rate-limits"
+                "Limite gratuito: 30 req/min e 1500 req/dia."
+            )
+        if "NOT_FOUND" in msg or "404" in msg:
+            raise ValueError(
+                "Modelo não encontrado. Verifique se a chave do AI Studio está correta."
             )
         raise
 
