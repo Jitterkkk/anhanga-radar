@@ -34,12 +34,17 @@ def extrair_dados(texto: str, api_key: str) -> dict:
     """Chama a API da Anthropic e retorna dicionário com os campos extraídos."""
     cliente = anthropic.Anthropic(api_key=api_key)
 
-    resposta = cliente.messages.create(
-        model=MODELO,
-        max_tokens=512,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": texto}],
-    )
+    try:
+        resposta = cliente.messages.create(
+            model=MODELO,
+            max_tokens=512,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": texto}],
+        )
+    except anthropic.AuthenticationError:
+        raise ValueError(
+            "API Key inválida. Verifique em console.anthropic.com"
+        )
 
     raw = resposta.content[0].text.strip()
     dados = _parsear_json(raw)
