@@ -156,19 +156,27 @@ class AnhangaRadar(tk.Tk):
         self._btn(acao, "Salvar na planilha", self._salvar,
                   accent=True, padx=20, pady=8).pack(side="right")
 
-        # Rodapé: status à esquerda, contador à direita
+        # Rodapé fixo — duas linhas
         rodape = tk.Frame(self, bg=CARD)
         rodape.pack(fill="x", side="bottom")
 
+        # Linha 1: mensagem de status (feedback de operações)
+        tk.Frame(rodape, bg=BORDER, height=1).pack(fill="x")
         self.var_barra = tk.StringVar(value="Pronto.")
         tk.Label(rodape, textvariable=self.var_barra, bg=CARD, fg=TEXT2,
                  font=("Segoe UI", 8), anchor="w",
-                 padx=14, pady=6).pack(side="left")
+                 padx=14, pady=4).pack(fill="x")
 
+        # Linha 2: caminho do arquivo | contador do dia
+        info = tk.Frame(rodape, bg="#12122a")
+        info.pack(fill="x")
+        tk.Label(info, text=str(EXCEL_PATH), bg="#12122a", fg="#3d3d5c",
+                 font=("Segoe UI", 7), anchor="w",
+                 padx=14, pady=4).pack(side="left")
         self.var_contador = tk.StringVar(value="")
-        tk.Label(rodape, textvariable=self.var_contador, bg=CARD, fg=ACCENT,
+        tk.Label(info, textvariable=self.var_contador, bg="#12122a", fg=ACCENT,
                  font=("Segoe UI", 8, "bold"), anchor="e",
-                 padx=14, pady=6).pack(side="right")
+                 padx=14, pady=4).pack(side="right")
 
     # ── Helpers de widget ────────────────────────────────────────────────────
 
@@ -223,8 +231,8 @@ class AnhangaRadar(tk.Tk):
 
     def _atualizar_contador(self):
         n = contar_registros_hoje(str(EXCEL_PATH))
-        texto = "Leads hoje: 1" if n == 1 else f"Leads hoje: {n}"
-        self.var_contador.set(texto)
+        s = "registro salvo hoje" if n == 1 else "registros salvos hoje"
+        self.var_contador.set(f"{n} {s}")
 
     def _toggle_apikey(self):
         self.ent_apikey.config(
