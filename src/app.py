@@ -225,7 +225,7 @@ class AnhangaRadar(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Anhangá Radar")
-        self.geometry("720x900")
+        self.geometry("720x800")
         self.resizable(False, False)
         self.configure(bg=BG)
         self._setup_style()
@@ -255,13 +255,26 @@ class AnhangaRadar(tk.Tk):
 
     def _build(self):
         # Header
-        hdr = tk.Frame(self, bg=CARD, height=60)
+        hdr = tk.Frame(self, bg=CARD, height=64)
         hdr.pack(fill="x")
         hdr.pack_propagate(False)
+
+        # Esquerda: título + crédito
         tk.Label(hdr, text="ANHANGÁ RADAR", bg=CARD, fg=TEXT,
                  font=("Segoe UI", 16, "bold")).pack(side="left", padx=20, pady=16)
         tk.Label(hdr, text="github.com/Jitterkkk  •  @jitterkkk", bg=CARD, fg=TEXT2,
                  font=("Segoe UI", 9)).pack(side="left", pady=22)
+
+        # Direita: botões de ferramentas
+        tools = tk.Frame(hdr, bg=CARD)
+        tools.pack(side="right", padx=16)
+
+        self.btn_importar = self._btn_ferramenta(
+            tools, "📂  Importar Planilha", self._importar_planilha)
+        self.btn_importar.pack(side="left", padx=(0, 8))
+
+        self._btn_ferramenta(
+            tools, "☰  Modo em Lote", self._abrir_batch).pack(side="left")
 
         body = tk.Frame(self, bg=BG)
         body.pack(fill="both", expand=True, padx=24, pady=14)
@@ -336,21 +349,8 @@ class AnhangaRadar(tk.Tk):
         acao.pack(fill="x", pady=(22, 0))
         self._btn(acao, "Abrir Excel", self._abrir_excel,
                   padx=16, pady=8).pack(side="left")
-        self._btn(acao, "Modo em Lote", self._abrir_batch,
-                  padx=16, pady=8).pack(side="left", padx=(10, 0))
         self._btn(acao, "Salvar na planilha", self._salvar,
                   accent=True, padx=20, pady=8).pack(side="right")
-
-        # Importar planilha antiga
-        self._sep(body)
-        self._titulo(body, "Importar dados de planilha antiga")
-        tk.Label(body,
-                 text="Selecione um .xlsx com contatos anteriores — a IA mapeia as colunas automaticamente.",
-                 bg=BG, fg=TEXT2, font=("Segoe UI", 8),
-                 wraplength=640, justify="left").pack(anchor="w", pady=(2, 8))
-        self.btn_importar = self._btn(body, "Selecionar arquivo .xlsx e importar",
-                                      self._importar_planilha, padx=16, pady=8)
-        self.btn_importar.pack(anchor="w")
 
         # Rodapé fixo — duas linhas
         rodape = tk.Frame(self, bg=CARD)
@@ -375,6 +375,20 @@ class AnhangaRadar(tk.Tk):
                  padx=14, pady=4).pack(side="right")
 
     # ── Helpers de widget ────────────────────────────────────────────────────
+
+    def _btn_ferramenta(self, parent, texto, cmd):
+        b = tk.Button(
+            parent, text=texto, command=cmd,
+            bg=SURFACE, fg=TEXT2,
+            activebackground=BORDER, activeforeground=TEXT,
+            font=("Segoe UI", 9), bd=0, relief="flat",
+            cursor="hand2", padx=14, pady=6,
+            highlightthickness=1, highlightbackground=BORDER,
+            highlightcolor=ACCENT,
+        )
+        b.bind("<Enter>", lambda _e: b.config(fg=TEXT, bg=BORDER))
+        b.bind("<Leave>", lambda _e: b.config(fg=TEXT2, bg=SURFACE))
+        return b
 
     def _titulo(self, parent, texto):
         tk.Label(parent, text=texto, bg=BG, fg=TEXT,
