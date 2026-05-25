@@ -1,6 +1,8 @@
 # Anhangá Radar
 
-App desktop para registro inteligente de contatos com vereadores durante a prospecção comercial da **Anhangá.AI**.
+App desktop para registro inteligente de contatos com vereadores durante a prospecção comercial.
+
+Desenvolvido por **[@Jitterkkk](https://github.com/Jitterkkk)** • Instagram: **[@jitterkkk](https://instagram.com/jitterkkk)**
 
 O usuário descreve o contato em linguagem natural — a IA extrai os dados automaticamente e os salva numa planilha Excel organizada por abas.
 
@@ -118,4 +120,4 @@ python -m unittest tests.test_excel -v
 
 ## Licença
 
-Uso interno — Anhangá.AI © 2026
+Desenvolvido por [@Jitterkkk](https://github.com/Jitterkkk) © 2026

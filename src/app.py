@@ -77,7 +77,7 @@ class AnhangaRadar(tk.Tk):
         hdr.pack_propagate(False)
         tk.Label(hdr, text="ANHANGÁ RADAR", bg=CARD, fg=TEXT,
                  font=("Segoe UI", 16, "bold")).pack(side="left", padx=20, pady=16)
-        tk.Label(hdr, text="by Anhangá.AI", bg=CARD, fg=TEXT2,
+        tk.Label(hdr, text="github.com/Jitterkkk  •  @jitterkkk", bg=CARD, fg=TEXT2,
                  font=("Segoe UI", 9)).pack(side="left", pady=22)
 
         body = tk.Frame(self, bg=BG)
