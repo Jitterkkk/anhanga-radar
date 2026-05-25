@@ -3,7 +3,7 @@ import re
 import google.generativeai as genai
 from google.api_core.exceptions import PermissionDenied, Unauthenticated
 
-MODELO = "gemini-2.0-flash"
+MODELO = "gemini-1.5-flash-latest"
 
 CAMPOS = ["nome", "sobrenome", "cidade", "telefone", "fonte", "status", "observacoes"]
 
