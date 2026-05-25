@@ -7,7 +7,8 @@ from tkinter import ttk, messagebox
 
 sys.path.insert(0, str(Path(__file__).parent))
 from ia_processor import extrair_dados
-from excel_manager import adicionar_linha, garantir_excel
+from excel_manager import adicionar_linha, garantir_excel, contar_registros_hoje
+import config
 
 ROOT       = Path(__file__).parent.parent
 EXCEL_PATH = ROOT / "data" / "contatos.xlsx"
@@ -47,6 +48,10 @@ class AnhangaRadar(tk.Tk):
         self._setup_style()
         self._build()
         self.bind_all("<Control-Return>", lambda _e: self._processar())
+        chave_salva = config.carregar_api_key(ROOT)
+        if chave_salva:
+            self.var_apikey.set(chave_salva)
+        self._atualizar_contador()
 
     # ── Estilo ───────────────────────────────────────────────────────────────
 
@@ -151,11 +156,19 @@ class AnhangaRadar(tk.Tk):
         self._btn(acao, "Salvar na planilha", self._salvar,
                   accent=True, padx=20, pady=8).pack(side="right")
 
-        # Status bar
+        # Rodapé: status à esquerda, contador à direita
+        rodape = tk.Frame(self, bg=CARD)
+        rodape.pack(fill="x", side="bottom")
+
         self.var_barra = tk.StringVar(value="Pronto.")
-        tk.Label(self, textvariable=self.var_barra, bg=CARD, fg=TEXT2,
+        tk.Label(rodape, textvariable=self.var_barra, bg=CARD, fg=TEXT2,
                  font=("Segoe UI", 8), anchor="w",
-                 padx=14, pady=6).pack(fill="x", side="bottom")
+                 padx=14, pady=6).pack(side="left")
+
+        self.var_contador = tk.StringVar(value="")
+        tk.Label(rodape, textvariable=self.var_contador, bg=CARD, fg=ACCENT,
+                 font=("Segoe UI", 8, "bold"), anchor="e",
+                 padx=14, pady=6).pack(side="right")
 
     # ── Helpers de widget ────────────────────────────────────────────────────
 
@@ -208,6 +221,11 @@ class AnhangaRadar(tk.Tk):
 
     # ── Lógica ───────────────────────────────────────────────────────────────
 
+    def _atualizar_contador(self):
+        n = contar_registros_hoje(str(EXCEL_PATH))
+        texto = "Leads hoje: 1" if n == 1 else f"Leads hoje: {n}"
+        self.var_contador.set(texto)
+
     def _toggle_apikey(self):
         self.ent_apikey.config(
             show="" if self.ent_apikey.cget("show") == "•" else "•"
@@ -237,6 +255,7 @@ class AnhangaRadar(tk.Tk):
             messagebox.showwarning("Descrição", "Descreva o contato antes de processar.")
             return
 
+        config.salvar_api_key(ROOT, api_key)
         self.btn_proc.config(state="disabled", text="Processando…")
         self.var_barra.set("⏳  Chamando a IA — aguarde...")
 
@@ -276,10 +295,10 @@ class AnhangaRadar(tk.Tk):
             aba  = dados["aba"]
             nome = f'{dados["nome"]} {dados["sobrenome"]}'.strip()
             self.var_barra.set(f'✓  "{nome}" salvo em "{aba}".')
+            self._atualizar_contador()
             self._limpar()
-        except PermissionError:
-            messagebox.showerror("Arquivo aberto",
-                                 "Feche o Excel antes de salvar.")
+        except PermissionError as exc:
+            messagebox.showerror("Arquivo bloqueado", str(exc))
         except Exception as exc:
             messagebox.showerror("Erro ao salvar", str(exc))
 

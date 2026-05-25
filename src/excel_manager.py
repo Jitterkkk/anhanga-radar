@@ -1,4 +1,6 @@
+import os
 from datetime import datetime
+from pathlib import Path
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 
@@ -21,7 +23,7 @@ def garantir_excel(path: str) -> None:
                 _criar_aba(wb, aba)
                 criou_aba = True
         if criou_aba:
-            wb.save(path)
+            _salvar_com_erro_claro(wb, path)
         return
     except FileNotFoundError:
         pass
@@ -30,7 +32,7 @@ def garantir_excel(path: str) -> None:
     wb.remove(wb.active)
     for aba in ABAS:
         _criar_aba(wb, aba)
-    wb.save(path)
+    _salvar_com_erro_claro(wb, path)
 
 
 def adicionar_linha(path: str, dados: dict) -> None:
@@ -65,7 +67,27 @@ def adicionar_linha(path: str, dados: dict) -> None:
         cell.alignment = align
 
     ws.row_dimensions[num].height = 18
-    wb.save(path)
+    _salvar_com_erro_claro(wb, path)
+
+
+def contar_registros_hoje(path: str) -> int:
+    """Conta linhas de dados registradas hoje em todas as abas."""
+    if not os.path.exists(path):
+        return 0
+    hoje = datetime.now().strftime("%d/%m/%Y")
+    total = 0
+    try:
+        wb = openpyxl.load_workbook(path, read_only=True)
+        for aba in ABAS:
+            if aba in wb.sheetnames:
+                for row in wb[aba].iter_rows(min_row=2, values_only=True):
+                    data_hora = row[7] if len(row) > 7 else None
+                    if data_hora and str(data_hora).startswith(hoje):
+                        total += 1
+        wb.close()
+    except Exception:
+        pass
+    return total
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -88,3 +110,14 @@ def _criar_aba(wb: openpyxl.Workbook, nome: str) -> None:
 
     ws.row_dimensions[1].height = 22
     ws.freeze_panes = "A2"
+
+
+def _salvar_com_erro_claro(wb: openpyxl.Workbook, path: str) -> None:
+    try:
+        wb.save(path)
+    except PermissionError:
+        nome = Path(path).name
+        raise PermissionError(
+            f"O arquivo '{nome}' está aberto em outro programa.\n"
+            "Feche o Excel e tente salvar novamente."
+        )
