@@ -28,6 +28,7 @@ def garantir_excel(path: str) -> None:
     except FileNotFoundError:
         pass
 
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     for aba in ABAS:
