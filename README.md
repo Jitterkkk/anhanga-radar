@@ -25,7 +25,7 @@ Os registros são salvos em `data/contatos.xlsx` com duas abas:
 ## Pré-requisitos
 
 - Python **3.8 ou superior** — [python.org/downloads](https://www.python.org/downloads/)
-- Chave de API da Anthropic — [console.anthropic.com](https://console.anthropic.com)
+- Chave de API do Groq — [console.groq.com](https://console.groq.com) (gratuito, sem cartão)
 - Git — [git-scm.com](https://git-scm.com)
 
 ---
@@ -43,12 +43,14 @@ pip install -r requirements.txt
 
 ---
 
-## Obtendo a API Key da Anthropic
+## Obtendo a API Key do Groq (gratuito)
 
-1. Acesse [console.anthropic.com](https://console.anthropic.com) e faça login
+1. Acesse [console.groq.com](https://console.groq.com) e crie uma conta (gratuita, sem cartão)
 2. No menu lateral, clique em **API Keys**
-3. Clique em **Create Key**, dê um nome (ex: `anhanga-radar`) e copie o valor gerado
-4. Cole a chave no campo **Chave da API Anthropic** dentro do app — ela será salva automaticamente para as próximas sessões
+3. Clique em **Create API Key**, dê um nome (ex: `anhanga-radar`) e copie o valor gerado
+4. Cole a chave no campo **Chave da API** dentro do app — ela será salva automaticamente para as próximas sessões
+
+Limites gratuitos: **30 req/min** e **14.400 req/dia** (Llama 3.3 70B).
 
 > A chave fica armazenada localmente em `.config` na raiz do projeto e nunca é enviada ao repositório.
 
@@ -91,11 +93,11 @@ Visita presencial ao vereador Roberto Dias em Bauru. Número errado no cadastro,
 ```
 anhanga-radar/
 ├── main.py              # Ponto de entrada — verifica Python e inicia o app
-├── requirements.txt     # Dependências: anthropic e openpyxl
+├── requirements.txt     # Dependências: groq e openpyxl
 ├── .gitignore
 ├── src/
 │   ├── app.py           # Interface gráfica (tkinter)
-│   ├── ia_processor.py  # Integração com a API da Anthropic
+│   ├── ia_processor.py  # Integração com a API do Groq (Llama 3.3)
 │   ├── excel_manager.py # Criação e escrita da planilha Excel
 │   └── config.py        # Persistência da API key em .config
 ├── data/

@@ -1,9 +1,9 @@
-from google import genai
+from groq import Groq
 import json
 
 
 def extrair_dados(texto: str, api_key: str) -> dict:
-    client = genai.Client(api_key=api_key)
+    client = Groq(api_key=api_key)
 
     prompt = f"""Extraia informações de contato com vereador e retorne SOMENTE JSON válido, sem markdown.
 
@@ -14,24 +14,26 @@ observacoes. Campos não mencionados retornam string vazia.
 Texto: {texto}"""
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash-lite",
-            contents=prompt,
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
         )
     except Exception as exc:
         msg = str(exc)
-        if "RESOURCE_EXHAUSTED" in msg or "429" in msg:
+        if "rate_limit" in msg.lower() or "429" in msg:
             raise ValueError(
-                "Cota da API esgotada. Aguarde alguns minutos e tente novamente.\n"
-                "Limite gratuito: 30 req/min e 1500 req/dia."
+                "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.\n"
+                "Limite gratuito: 30 req/min e 14.400 req/dia."
             )
-        if "NOT_FOUND" in msg or "404" in msg:
+        if "invalid_api_key" in msg.lower() or "401" in msg:
             raise ValueError(
-                "Modelo não encontrado. Verifique se a chave do AI Studio está correta."
+                "Chave da API inválida. Verifique sua chave em console.groq.com"
             )
         raise
 
-    raw = response.text.strip().replace("```json", "").replace("```", "").strip()
+    raw = response.choices[0].message.content.strip()
+    raw = raw.replace("```json", "").replace("```", "").strip()
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
