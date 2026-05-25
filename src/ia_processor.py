@@ -4,7 +4,7 @@ import json
 def extrair_dados(texto: str, api_key: str) -> dict:
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel(
-        model_name="models/gemini-1.5-flash",
+        model_name="gemini-1.5-flash",
         generation_config={"temperature": 0.1}
     )
     prompt = f"""Extraia informações de contato com vereador e retorne SOMENTE JSON válido, sem markdown.
